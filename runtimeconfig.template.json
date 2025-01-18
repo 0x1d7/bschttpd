@@ -1,0 +1,9 @@
+{
+   "runtimeOptions": {
+      "configProperties": {
+         "System.Threading.ThreadPool.MinThreads": 4,
+         "System.Net.Http.SocketsHttpHandler.Http2Support": true,
+         "System.GC.Server": true
+      }
+   }
+}

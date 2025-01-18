@@ -1,0 +1,17 @@
+{
+  "NoCache": [
+    "appsettings.json",
+    "bschttpd",
+    "bschttpd.exe",
+    ".dll",
+    ".json",
+    ".pdb",
+    ".db",
+    ".pem",
+    ".p12",
+    ".pfx",
+    ".key",
+    ".der",
+    ".cer"
+  ]
+}

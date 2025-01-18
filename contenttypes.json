@@ -1,0 +1,28 @@
+{
+  "ContentTypes": {
+    ".html": "text/html",
+    ".htm": "text/html",
+    ".css": "text/css",
+    ".js": "application/javascript",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
+    ".svg": "image/svg+xml",
+    ".gif": "image/gif",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".zip": "application/zip",
+    ".7z": "application/x-7z-compressed",
+    ".doc": "application/msword",
+    ".xls": "application/vnd.ms-excel",
+    ".ppt": "application/vnd.ms-powerpoint",
+    ".pdf": "application/pdf",
+    ".docx": "application/word",
+    ".xlsx": "application/excel",
+    ".pptx": "application/ppt",
+    ".eml": "application/eml",
+    ".msg": "text/plain",
+    ".json": "application/json"
+  }
+}
