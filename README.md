@@ -28,7 +28,8 @@ This application has been tested on:
 * Http and Https support
 * HTTP/1.1, HTTP/2.0, and HTTP/3.0 support
 * Http to Https Redirection
-* W3C-formatted logs output to a Sqlite database
+* Certificate rollover without restart
+* W3C-formatted logs
 * Status and error logs output to a Sqlite database
 * In-memory caching for all served files
 

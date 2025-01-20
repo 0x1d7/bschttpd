@@ -6,5 +6,4 @@ public class ContentConfiguration
 {
     public List<string> NoServe { get; set; }
     public List<string> NoCache { get; set; }
-    public Dictionary<string, string> ContentTypeMap { get; set; }
 }

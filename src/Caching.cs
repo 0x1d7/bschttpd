@@ -17,6 +17,10 @@ public class Caching(SqliteLogger logger)
             if (!excludedFiles.Any(ex => file.EndsWith(ex, StringComparison.OrdinalIgnoreCase))
                 && !Path.GetFileName(file).StartsWith("."))
             {
+                var fileInfo = new FileInfo(file);
+                if (fileInfo.Length > 104857600)
+                    continue;
+                
                 var fileContent = File.ReadAllBytes(file);
                 memoryCache.Set(file, fileContent, new MemoryCacheEntryOptions
                 {

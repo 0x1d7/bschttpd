@@ -1,8 +1,6 @@
 using bschttpd.Properties;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace bschttpd;
@@ -12,13 +10,11 @@ public class RequestHandlingMiddleware
     private readonly RequestDelegate _next;
     private readonly IOptions<WebServerConfiguration> _webServerConfig;
     private readonly IOptions<ContentConfiguration> _contentConfig;
-    private readonly IMemoryCache? _memoryCache;
     
     public RequestHandlingMiddleware(RequestDelegate next, IMemoryCache memoryCache, IOptions<WebServerConfiguration> webServerConfiguration,
         IOptions<ContentConfiguration> contentConfiguration)
     {
         _next = next;
-        _memoryCache = memoryCache;
         _webServerConfig = webServerConfiguration;
         _contentConfig = contentConfiguration;
     }
@@ -56,36 +52,6 @@ public class RequestHandlingMiddleware
             return;
         }
         
-        var fullPath = Path.Combine(_webServerConfig.Value.Wwwroot, path);
-
-        if (string.IsNullOrEmpty(path) || path == "/")
-            fullPath = $"{fullPath}/{_webServerConfig.Value.DefaultDocument}";
-        
-#pragma warning disable CS8604 // Possible null reference argument.
-        if (_memoryCache.TryGetValue(fullPath, out byte[]? fileContent))
-#pragma warning restore CS8604 // Possible null reference argument.
-        {
-            context.Response.ContentType = ContentType.GetContentType(fullPath, _contentConfig.Value.ContentTypeMap);
-            await context.Response.Body.WriteAsync(fileContent);
-        }
-        else if (File.Exists(fullPath))
-        {
-            var fileBytes = await File.ReadAllBytesAsync(fullPath);
-            context.Response.ContentType = ContentType.GetContentType(fullPath, _contentConfig.Value.ContentTypeMap);
-            await context.Response.Body.WriteAsync(fileBytes);
-
-            _memoryCache.Set(fullPath, fileBytes, new MemoryCacheEntryOptions
-            {
-                Priority = CacheItemPriority.NeverRemove
-            });
-        }
-        else
-        {
-            if(context.Response.HasStarted) return;
-            await HandleErrorResponse(context, 404);
-            return;
-        }
-        
         await _next(context);
     }
 
@@ -106,8 +72,8 @@ public class RequestHandlingMiddleware
             await context.Response.WriteAsync($"An error occurred: {statusCode}");
         }
 
+        //short circuit remaining middleware
         await context.Response.CompleteAsync();
-        await _next(context);
     }
 
     private bool IsExcluded(string path, List<string> noServe)

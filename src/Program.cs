@@ -1,12 +1,8 @@
-using System.Diagnostics;
 using System.IO.Compression;
-using System.Net;
-using System.Runtime.CompilerServices;
 using bschttpd;
 using bschttpd.Properties;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -18,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 var host = Host.CreateDefaultBuilder(args)
@@ -71,6 +67,8 @@ var host = Host.CreateDefaultBuilder(args)
         });
 
         services.AddMemoryCache();
+        services.AddResponseCaching();
+        
         services.AddSingleton<SqliteConnection>(provider =>
         {
             var configuration = provider.GetRequiredService<IConfiguration>();
@@ -85,7 +83,8 @@ var host = Host.CreateDefaultBuilder(args)
             var categoryName = "DefaultCategory";
             return new SqliteLogger(connection, categoryName);
         });
-        
+
+        services.AddDirectoryBrowser();
         services.AddSingleton<Caching>();
     })
     .ConfigureLogging(logging =>
@@ -112,46 +111,59 @@ var host = Host.CreateDefaultBuilder(args)
             webBuilder.UseKestrel((context, options) =>
             {
                 var config = context.Configuration;
-
-                options.Configure(config.GetSection("Kestrel"));
+                //will reload endpoints on cert update
+                options.Configure(config.GetSection("Kestrel"), true);
             });
-            
-            webBuilder.UseContentRoot(wwwroot);
-            
-            app.UseResponseCompression();
-            app.UseW3CLogging();
-            
-            var staticFileProvider = new FileExtensionContentTypeProvider();
-            
-            foreach (var contentType in contentConfigurationOptions.ContentTypeMap)
-            {
-                staticFileProvider.Mappings[contentType.Key] = contentType.Value;
-            }
 
-            var options = new StaticFileOptions
+            var contentTypeProvider = new FileExtensionContentTypeProvider();
+            var physicalFileProvider = new PhysicalFileProvider(wwwroot);
+            var directoryPhysicalFileProvider = new PhysicalFileProvider(Path.Combine(
+                webServerConfigurationOptions.Wwwroot,
+                webServerConfigurationOptions.DirectoryBrowserRelativeDefaultPath));
+            
+            var defaultFileOptions = new DefaultFilesOptions();
+            defaultFileOptions.DefaultFileNames.Clear();
+            defaultFileOptions.DefaultFileNames.Add(webServerConfigurationOptions.DefaultDocument);
+            defaultFileOptions.FileProvider =  physicalFileProvider;
+            
+            var staticFileOptions = new StaticFileOptions
             {
                 OnPrepareResponse = ctx =>
                 {
-                   ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=31536000");
                    ctx.Context.Response.OnStarting(() => Task.CompletedTask);
                 },
                 DefaultContentType = "application/octet-stream",
                 ServeUnknownFileTypes = true,
                 HttpsCompression = HttpsCompressionMode.Compress,
-                ContentTypeProvider = staticFileProvider,
-                FileProvider = new PhysicalFileProvider(wwwroot)
+                ContentTypeProvider = contentTypeProvider,
+                FileProvider = physicalFileProvider
             };
-
-            app.UseStaticFiles(options);
+            
+            app.UseDirectoryBrowser(new DirectoryBrowserOptions
+            {
+                FileProvider = directoryPhysicalFileProvider,
+                RequestPath = Path.Combine("/", 
+                    webServerConfigurationOptions.DirectoryBrowserRelativeDefaultPath)
+            });
             
             var caching = new Caching(logger);
-            caching.PreCacheFiles(wwwroot, memoryCache, contentConfigurationOptions.NoCache, webServerConfigurationOptions.DefaultDocument);
+            caching.PreCacheFiles(wwwroot, memoryCache, contentConfigurationOptions.NoCache, 
+                webServerConfigurationOptions.DefaultDocument);
 
             if(webServerConfigurationOptions.HttpsRedirection)
                 app.UseHttpsRedirection();
             
+            webBuilder.UseContentRoot(wwwroot);
+            
+            /* Ordered to apply custom headers first, logging before response,
+                response error checking before serving */
             app.UseMiddleware<ResponseHeadersMiddleware>();
+            app.UseResponseCaching();
+            app.UseResponseCompression();
+            app.UseW3CLogging();
             app.UseMiddleware<RequestHandlingMiddleware>();
+            app.UseDefaultFiles(defaultFileOptions);
+            app.UseStaticFiles(staticFileOptions); //move to MapStaticAssets in 10.0
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>

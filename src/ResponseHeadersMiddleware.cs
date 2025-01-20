@@ -1,24 +1,25 @@
+using bschttpd.Properties;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 namespace bschttpd;
 
-public class ResponseHeadersMiddleware
+public class ResponseHeadersMiddleware(RequestDelegate next, IOptions<WebServerConfiguration> webServerConfiguration)
 {
-    private readonly RequestDelegate _next;
-
-    public ResponseHeadersMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         context.Response.OnStarting(() =>
         {
-            context.Response.Headers["Server"] = "Basic-HTTPd/1.0";
+            context.Response.Headers.Server = webServerConfiguration.Value.ServerName;
+            context.Response.GetTypedHeaders().CacheControl = 
+                new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
+            {
+                Public = true,
+                MaxAge = TimeSpan.FromMinutes(webServerConfiguration.Value.CacheControlMaxAge)
+            };
             return Task.CompletedTask;
         });
         
-        await _next(context);
+        await next(context);
     }
 }
