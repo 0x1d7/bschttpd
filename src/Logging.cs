@@ -65,51 +65,6 @@ public class SqliteLogger : ILogger
             Console.WriteLine(e);
         }
     }
-
-    public async Task LogW3C(W3CLogEntry logEntry)
-    {
-        try
-        {
-            var command = _connection.CreateCommand();
-            command.CommandText =
-                @"INSERT INTO W3CLogs (Date, Time, 's-sitename', 's-computername', 's-ip', 'cs-method', 'cs-uri-stem', " +
-                "'cs-uri-query', 's-port', 'cs-username', 'c-ip', 'cs-version', 'cs(User-Agent)', 'cs(Cookie)', " +
-                "'cs(Referrer)', 'cs-host', 'sc-status', 'sc-substatus', 'sc-win32-status', 'sc-bytes', 'cs-bytes', 'time-taken', streamid) " +
-                "VALUES ($date, $time, $ssitename, $scomputername, $sip, $csmethod, $csuristem, $csuriquery, $sport, $csusername, $cip, " +
-                "$csversion, $csuseragent, $cscookie, $csreferrer, $cshost, $scstatus, $scsubstatus, $scwin32status, $scbytes, $csbytes, " +
-                " $timetaken, $streamid)";
-            
-     
-                command.Parameters.AddWithValue("$date", logEntry.Date);
-                command.Parameters.AddWithValue("$time", logEntry.Time);
-                command.Parameters.AddWithValue("$ssitename", logEntry.ssitename);
-                command.Parameters.AddWithValue("$scomputername", logEntry.scomputername);
-                command.Parameters.AddWithValue("$sip", logEntry.sip);
-                command.Parameters.AddWithValue("$csmethod", logEntry.csmethod);
-                command.Parameters.AddWithValue("$csuristem", logEntry.csuristem);
-                command.Parameters.AddWithValue("$csuriquery", logEntry.csuriquery);
-                command.Parameters.AddWithValue("$sport", logEntry.sport);
-                command.Parameters.AddWithValue("$csusername", logEntry.csusername);
-                command.Parameters.AddWithValue("$cip", logEntry.cip);
-                command.Parameters.AddWithValue("$csversion", logEntry.csversion);
-                command.Parameters.AddWithValue("$csuseragent", logEntry.csuseragent);
-                command.Parameters.AddWithValue("$cscookie", logEntry.cscookie);
-                command.Parameters.AddWithValue("$csreferrer", logEntry.csreferrer);
-                command.Parameters.AddWithValue("$cshost", logEntry.cshost);
-                command.Parameters.AddWithValue("$scstatus", logEntry.scstatus);
-                command.Parameters.AddWithValue("$scsubstatus", logEntry.scsubstatus);
-                command.Parameters.AddWithValue("$scwin32status", logEntry.scwin32status);
-                command.Parameters.AddWithValue("$scbytes", logEntry.csbytes);
-                command.Parameters.AddWithValue("$csbytes", logEntry.csbytes);
-                command.Parameters.AddWithValue("$timetaken", logEntry.timetaken);
-                command.Parameters.AddWithValue("$streamid", logEntry.streamid);
-                await command.ExecuteNonQueryAsync().ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
-    }
     
     #pragma warning disable CS8767
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,

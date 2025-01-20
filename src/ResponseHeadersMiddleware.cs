@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Http;
 
 namespace bschttpd;
 
-public class ResponseHeaders
+public class ResponseHeadersMiddleware
 {
     private readonly RequestDelegate _next;
 
-    public ResponseHeaders(RequestDelegate next)
+    public ResponseHeadersMiddleware(RequestDelegate next)
     {
         _next = next;
     }
