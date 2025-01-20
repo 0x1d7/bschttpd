@@ -32,6 +32,7 @@ This application has been tested on:
 * W3C-formatted logs
 * Status and error logs output to a Sqlite database
 * In-memory caching for all served files
+* Directory browsing
 
 ## Deployment
 
@@ -95,8 +96,8 @@ that port numbers below port 1024 generally require elevated rights on operating
 
 The next step is to specify the `Wwwroot` value. This value is where the files you want to serve via the web are 
 located. It must be a fully qualified path. Examples of this might be `/srv/wwwroot` on Linux, 
-`/Users/userName/Sites/wwwroot` on macOS, or `C:\basichttpd\wwwroot` on Windows. If running BasicHttpd under a 
-dedicated user account, the user must have read only rights to this directory.
+`/Users/userName/Sites/wwwroot` on macOS, or `C:\\basichttpd\\wwwroot` on Windows (note the double blackslashes). If 
+running BasicHttpd under a dedicated user account, the user must have read only rights to this directory.
 
 ### Other Settings
 
@@ -111,6 +112,6 @@ client.
 `NoCache` is a list of filenames and file extensions which will not be cached by BasicHttpd during the lifecycle of 
 the application.
 
-`ContentTypeMap` is a list of MIME type mappings.
+`DirectoryBrowsingEnabled` an FTP-like browsing interface.
 
-`Logging` is not used at runtime.
+`DirectoryBrowserRelativeDefaultPath` a relative path under `wwwroot`.
