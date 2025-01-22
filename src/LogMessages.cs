@@ -27,7 +27,7 @@ namespace bschttpd
         [LoggerMessage(EventId = 1007, Level = LogLevel.Information, Message = "Middleware configured.")]
         public static partial void MiddlewareConfigured(ILogger logger);
         
-        [LoggerMessage(EventId = 2, Level = LogLevel.Error, Message = "Exception occurred: {exception}")]
+        [LoggerMessage(EventId = 2, Level = LogLevel.Error, Message = "Exception occurred.")]
         public static partial void ExceptionOccurred(ILogger logger, Exception exception);
     }
 }

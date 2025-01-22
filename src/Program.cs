@@ -71,7 +71,6 @@ var host = Host.CreateDefaultBuilder(args)
     .ConfigureLogging(logging =>
     {
         logging.ClearProviders();
-        logging.AddConsole();
         
         var logsDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
         var errorFilePath = Path.Combine(logsDirectory, "errors.log");
