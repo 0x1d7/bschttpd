@@ -19,9 +19,14 @@ var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
     {
         var env = hostingContext.HostingEnvironment;
-        
-        config.AddJsonFile("appsettings.json", false, false)
+
+        config.AddJsonFile($"appsettings.json", false, false)
             .AddJsonFile($"appsettings.{env.EnvironmentName}.json", false, false);
+
+        if (env.IsDevelopment())
+        {
+            config.AddJsonFile($"appsettings.Development.local.json", false, false);
+        }
     })
     .ConfigureServices((hostingContext, services) =>
     {
@@ -33,16 +38,6 @@ var host = Host.CreateDefaultBuilder(args)
             {
                 bindOptions.ErrorOnUnknownConfiguration = true;
             })
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        var contentConfiguration = hostingContext.Configuration.GetSection(nameof(ContentConfiguration));
-
-        services.AddOptions<ContentConfiguration>()
-            .BindConfiguration(contentConfiguration.Path, bindOptions =>
-            {
-                bindOptions.ErrorOnUnknownConfiguration = true;
-            })
             .ValidateOnStart();
 
         services.AddResponseCompression(options =>
@@ -50,6 +45,7 @@ var host = Host.CreateDefaultBuilder(args)
             options.EnableForHttps = true;
             options.Providers.Add<GzipCompressionProvider>();
         });
+        
         services.Configure<GzipCompressionProviderOptions>(options =>
         {
             options.Level = CompressionLevel.Optimal;
@@ -73,6 +69,19 @@ var host = Host.CreateDefaultBuilder(args)
         logging.ClearProviders();
         
         var logsDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+
+        if (!Directory.Exists(logsDirectory))
+        {
+            try
+            {
+                Directory.CreateDirectory(logsDirectory);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine($"Unable to create logs directory: {logsDirectory}.");
+            }
+        }
+   
         var errorFilePath = Path.Combine(logsDirectory, "errors.log");
         var statusFilePath = Path.Combine(logsDirectory, "status.log");
         
@@ -100,9 +109,8 @@ var host = Host.CreateDefaultBuilder(args)
                 var config = context.Configuration;
                 //will reload endpoints on cert update
                 options.Configure(config.GetSection("Kestrel"), true);
-                
-                Log.KestrelConfigured(logger);
             });
+            Log.KestrelConfigured(logger);
 
             var contentTypeProvider = new FileExtensionContentTypeProvider();
             var physicalFileProvider = new PhysicalFileProvider(wwwroot);

@@ -6,8 +6,7 @@ namespace bschttpd;
 
 public class RequestHandlingMiddleware(
     RequestDelegate next,
-    IOptions<WebServerConfiguration> webServerConfiguration,
-    IOptions<ContentConfiguration> contentConfiguration)
+    IOptions<WebServerConfiguration> webServerConfiguration)
 {
     public async Task InvokeAsync(HttpContext context)
     {
@@ -28,7 +27,7 @@ public class RequestHandlingMiddleware(
             return;
         }
 
-        if (IsExcluded(path, contentConfiguration.Value.NoServe))
+        if (IsExcluded(path, webServerConfiguration.Value.NoServe))
         {
             if (context.Response.HasStarted) return;
             await HandleErrorResponse(context, 404);

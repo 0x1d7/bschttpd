@@ -20,4 +20,5 @@ public class WebServerConfiguration
     public string ServerName => "Basic-Httpd/1.0";
     public bool DirectoryBrowsingEnabled { get; set; } = false;
     public string DirectoryBrowserRelativeDefaultPath { get; set; } = "files";
+    public List<string> NoServe { get; set; }
 }

@@ -1,12 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
   </PropertyGroup>
   
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Threading.ThreadPool.MinThreads" Value="4"/>
+    <RuntimeHostConfigurationOption Include="System.Net.Http.SocketsHttpHandler.Http2Support" Value="true"/>
+    <RuntimeHostConfigurationOption Include="System.GC.Server" Value="true"/>
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugType>none</DebugType>
   </PropertyGroup>
@@ -62,6 +68,9 @@
     <None Update="errorpages\503.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Compile Remove="src\Properties\ContentConfiguration.cs" />
+    <None Update="appsettings.Development.local.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
-
 </Project>
