@@ -1,24 +1,14 @@
 using bschttpd.Properties;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace bschttpd;
 
-public class RequestHandlingMiddleware
+public class RequestHandlingMiddleware(
+    RequestDelegate next,
+    IOptions<WebServerConfiguration> webServerConfiguration,
+    IOptions<ContentConfiguration> contentConfiguration)
 {
-    private readonly RequestDelegate _next;
-    private readonly IOptions<WebServerConfiguration> _webServerConfig;
-    private readonly IOptions<ContentConfiguration> _contentConfig;
-    
-    public RequestHandlingMiddleware(RequestDelegate next, IMemoryCache memoryCache, IOptions<WebServerConfiguration> webServerConfiguration,
-        IOptions<ContentConfiguration> contentConfiguration)
-    {
-        _next = next;
-        _webServerConfig = webServerConfiguration;
-        _contentConfig = contentConfiguration;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value?.TrimStart('/').TrimEnd();
@@ -38,7 +28,7 @@ public class RequestHandlingMiddleware
             return;
         }
 
-        if (IsExcluded(path, _contentConfig.Value.NoServe))
+        if (IsExcluded(path, contentConfiguration.Value.NoServe))
         {
             if (context.Response.HasStarted) return;
             await HandleErrorResponse(context, 404);
@@ -52,12 +42,12 @@ public class RequestHandlingMiddleware
             return;
         }
         
-        await _next(context);
+        await next(context);
     }
 
     private async Task HandleErrorResponse(HttpContext context, int statusCode)
     {
-        var errorPath = Path.Combine($"{System.Environment.CurrentDirectory}/{_webServerConfig.Value.ErrorPagesPath}", 
+        var errorPath = Path.Combine($"{Environment.CurrentDirectory}/{webServerConfiguration.Value.ErrorPagesPath}", 
             $"{statusCode}.html");
         if (File.Exists(errorPath))
         {

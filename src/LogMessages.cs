@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Extensions.Logging;
 
 namespace bschttpd
@@ -20,7 +19,7 @@ namespace bschttpd
         public static partial void StaticFileOptionsConfigured(ILogger logger);
         
         [LoggerMessage(EventId = 1005, Level = LogLevel.Information, Message = "Https redirect {httpsredirect}.")]
-        public static partial void HttpsRedirectConfigured(ILogger logger, bool httpsredirect);
+        public static partial void HttpsRedirectConfigured(ILogger logger, bool httpsRedirect);
         [LoggerMessage(EventId = 1006, Level = LogLevel.Information, Message = "Content root: {contentRoot}.")]
         public static partial void ContentRoot(ILogger logger, string contentRoot);
         

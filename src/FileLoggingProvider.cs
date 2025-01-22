@@ -4,7 +4,7 @@ namespace bschttpd
 {
     public class FileLoggingProvider(string filePath, string categoryName) : ILogger
     {
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         private async Task LogToFileAsync(string message)
         {
