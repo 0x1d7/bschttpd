@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>com.bschttpd.service</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/opt/bschttpd/bschttpd</string>
+        </array>
+        <key>ServiceDescription</key>
+        <string>BasicHttpd web server</string>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>KeepAlive</key>
+        <true/>
+        <key>StandardOutPath</key>
+        <string>/opt/local/var/log/bschttpd/bschttpd.stdout</string>
+        <key>StandardErrorPath</key>
+        <string>/opt/local/var/log/bschttpd/bschttpd.stderr</string>
+        <key>UserName</key>
+        <string>bschttpd</string>
+        <key>EnvironmentVariables</key>
+        <dict> 
+            <key>ASPNETCORE_ENVIRONMENT</key> 
+            <string>Production</string>
+        </dict>
+        <key>ThrottleInterval</key>
+        <integer>60</integer>
+        <key>WorkingDirectory</key>
+        <string>/opt/bschttpd</string>
+    </dict>
+</plist>

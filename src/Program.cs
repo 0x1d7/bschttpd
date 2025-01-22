@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -68,51 +66,43 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddMemoryCache();
         services.AddResponseCaching();
-        
-        services.AddSingleton<SqliteConnection>(provider =>
-        {
-            var configuration = provider.GetRequiredService<IConfiguration>();
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            if (connectionString is null) 
-                throw new InvalidOperationException("Connection string 'DefaultConnection' not found."); 
-            return new SqliteConnection(connectionString);
-        });
-        services.AddSingleton<SqliteLogger>(provider =>
-        {
-            var connection = provider.GetRequiredService<SqliteConnection>();
-            var categoryName = "DefaultCategory";
-            return new SqliteLogger(connection, categoryName);
-        });
-
         services.AddDirectoryBrowser();
-        services.AddSingleton<Caching>();
     })
     .ConfigureLogging(logging =>
     {
         logging.ClearProviders();
         logging.AddConsole();
         
-        LoggerFactory.Create(builder => builder.AddConsole());
+        var logsDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+        var errorFilePath = Path.Combine(logsDirectory, "errors.log");
+        var statusFilePath = Path.Combine(logsDirectory, "status.log");
+        
+        logging.AddProvider(new FileLoggingProviderProvider(errorFilePath, statusFilePath));
     })
+
     .ConfigureWebHostDefaults(webBuilder =>
     {
-        webBuilder.Configure((hostingContext, app) =>
+        webBuilder.Configure(app =>
         {
+#if WINDOWS
+            webBuilder.UseWindowsService();
+#endif
+            
             var services = app.ApplicationServices;
-            var memoryCache = services.GetRequiredService<IMemoryCache>();
-            var logger = services.GetRequiredService<SqliteLogger>();
+            var logger = services.GetRequiredService<ILogger<Program>>();
             var configuration = services.GetRequiredService<IConfiguration>();
             var webServerConfiguration = configuration.GetRequiredSection(nameof(WebServerConfiguration));
             var webServerConfigurationOptions = webServerConfiguration.Get<WebServerConfiguration>();
-            var contentConfiguration = hostingContext.Configuration.GetRequiredSection(nameof(ContentConfiguration));
-            var contentConfigurationOptions = contentConfiguration.Get<ContentConfiguration>();
             var wwwroot = webServerConfigurationOptions.Wwwroot;
+            Log.WebServerConfigured(logger, wwwroot);
             
             webBuilder.UseKestrel((context, options) =>
             {
                 var config = context.Configuration;
                 //will reload endpoints on cert update
                 options.Configure(config.GetSection("Kestrel"), true);
+                
+                Log.KestrelConfigured(logger);
             });
 
             var contentTypeProvider = new FileExtensionContentTypeProvider();
@@ -120,11 +110,15 @@ var host = Host.CreateDefaultBuilder(args)
             var directoryPhysicalFileProvider = new PhysicalFileProvider(Path.Combine(
                 webServerConfigurationOptions.Wwwroot,
                 webServerConfigurationOptions.DirectoryBrowserRelativeDefaultPath));
+
+            Log.PhysicalFileProviderConfigured(logger);
             
             var defaultFileOptions = new DefaultFilesOptions();
             defaultFileOptions.DefaultFileNames.Clear();
             defaultFileOptions.DefaultFileNames.Add(webServerConfigurationOptions.DefaultDocument);
             defaultFileOptions.FileProvider =  physicalFileProvider;
+
+            Log.DefaultFilesOptionsConfigured(logger, webServerConfigurationOptions.DefaultDocument);
             
             var staticFileOptions = new StaticFileOptions
             {
@@ -138,6 +132,8 @@ var host = Host.CreateDefaultBuilder(args)
                 ContentTypeProvider = contentTypeProvider,
                 FileProvider = physicalFileProvider
             };
+
+            Log.StaticFileOptionsConfigured(logger);
             
             app.UseDirectoryBrowser(new DirectoryBrowserOptions
             {
@@ -145,15 +141,20 @@ var host = Host.CreateDefaultBuilder(args)
                 RequestPath = Path.Combine("/", 
                     webServerConfigurationOptions.DirectoryBrowserRelativeDefaultPath)
             });
-            
-            var caching = new Caching(logger);
-            caching.PreCacheFiles(wwwroot, memoryCache, contentConfigurationOptions.NoCache, 
-                webServerConfigurationOptions.DefaultDocument);
 
-            if(webServerConfigurationOptions.HttpsRedirection)
+            if (webServerConfigurationOptions.HttpsRedirection)
+            {
                 app.UseHttpsRedirection();
+                Log.HttpsRedirectConfigured(logger, webServerConfigurationOptions.HttpsRedirection);
+            }
+            else
+            {
+                Log.HttpsRedirectConfigured(logger, webServerConfigurationOptions.HttpsRedirection);
+            }
             
             webBuilder.UseContentRoot(wwwroot);
+            
+            Log.ContentRoot(logger, wwwroot);
             
             /* Ordered to apply custom headers first, logging before response,
                 response error checking before serving */
@@ -164,6 +165,9 @@ var host = Host.CreateDefaultBuilder(args)
             app.UseMiddleware<RequestHandlingMiddleware>();
             app.UseDefaultFiles(defaultFileOptions);
             app.UseStaticFiles(staticFileOptions); //move to MapStaticAssets in 10.0
+
+            Log.MiddlewareConfigured(logger);
+            
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>

@@ -28,9 +28,6 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="sql\bschttpd.db">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="appsettings.Development.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -64,10 +61,8 @@
     <None Update="errorpages\503.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="src\sql\" />
+    <Compile Remove="src\Logging.cs" />
+    <Compile Remove="src\ContentType.cs" />
   </ItemGroup>
 
 </Project>
