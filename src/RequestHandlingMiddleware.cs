@@ -4,10 +4,16 @@ using Microsoft.Extensions.Options;
 
 namespace bschttpd;
 
-public class RequestHandlingMiddleware(
-    RequestDelegate next,
-    IOptions<WebServerConfiguration> webServerConfiguration)
+public class RequestHandlingMiddleware
 {
+    private readonly RequestDelegate _next;
+    private readonly IOptions<WebServerConfiguration> _webServerConfiguration;
+    public RequestHandlingMiddleware(RequestDelegate next, IOptions<WebServerConfiguration> webServerConfiguration)
+    {
+        _next = next;
+        _webServerConfiguration = webServerConfiguration;
+    }
+    
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value?.TrimStart('/').TrimEnd();
@@ -27,7 +33,7 @@ public class RequestHandlingMiddleware(
             return;
         }
 
-        if (IsExcluded(path, webServerConfiguration.Value.NoServe))
+        if (IsExcluded(path, _webServerConfiguration.Value.NoServe))
         {
             if (context.Response.HasStarted) return;
             await HandleErrorResponse(context, 404);
@@ -40,13 +46,19 @@ public class RequestHandlingMiddleware(
             await HandleErrorResponse(context, 404);
             return;
         }
+
+        await _next(context);
         
-        await next(context);
+        if (context.Response.StatusCode == StatusCodes.Status404NotFound)
+        {
+            if (context.Response.HasStarted) return;
+            await HandleErrorResponse(context, 404);
+        }
     }
 
     private async Task HandleErrorResponse(HttpContext context, int statusCode)
     {
-        var errorPath = Path.Combine($"{Environment.CurrentDirectory}/{webServerConfiguration.Value.ErrorPagesPath}", 
+        var errorPath = Path.Combine($"{Environment.CurrentDirectory}/{_webServerConfiguration.Value.ErrorPagesPath}", 
             $"{statusCode}.html");
         if (File.Exists(errorPath))
         {

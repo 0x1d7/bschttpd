@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using bschttpd;
+using bschttpd.Extensions;
 using bschttpd.Properties;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -19,13 +20,13 @@ var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
     {
         var env = hostingContext.HostingEnvironment;
-
-        config.AddJsonFile($"appsettings.json", false, false)
-            .AddJsonFile($"appsettings.{env.EnvironmentName}.json", false, false);
+        var basePath = AppContext.BaseDirectory;
+        config.AddJsonFile(Path.Combine(basePath,$"appsettings.json"), false, false)
+            .AddJsonFile(Path.Combine(basePath,$"appsettings.{env.EnvironmentName}.json"), false, false);
 
         if (env.IsDevelopment())
         {
-            config.AddJsonFile($"appsettings.Development.local.json", false, false);
+            config.AddJsonFile(Path.Combine(basePath,$"appsettings.Development.local.json"), false, false);
         }
     })
     .ConfigureServices((hostingContext, services) =>
@@ -60,6 +61,8 @@ var host = Host.CreateDefaultBuilder(args)
             logging.LogDirectory = webServerConfigurationOptions.W3CLogDirectory;
         });
 
+        services.AddCustomHostFiltering(hostingContext);
+        
         services.AddMemoryCache();
         services.AddResponseCaching();
         services.AddDirectoryBrowser();
@@ -110,6 +113,7 @@ var host = Host.CreateDefaultBuilder(args)
                 //will reload endpoints on cert update
                 options.Configure(config.GetSection("Kestrel"), true);
             });
+            
             Log.KestrelConfigured(logger);
 
             var contentTypeProvider = new FileExtensionContentTypeProvider();
@@ -123,21 +127,18 @@ var host = Host.CreateDefaultBuilder(args)
             var defaultFileOptions = new DefaultFilesOptions();
             defaultFileOptions.DefaultFileNames.Clear();
             defaultFileOptions.DefaultFileNames.Add(webServerConfigurationOptions.DefaultDocument);
-            defaultFileOptions.FileProvider =  physicalFileProvider;
+            defaultFileOptions.FileProvider = physicalFileProvider;
 
             Log.DefaultFilesOptionsConfigured(logger, webServerConfigurationOptions.DefaultDocument);
             
             var staticFileOptions = new StaticFileOptions
             {
-                OnPrepareResponse = ctx =>
-                {
-                   ctx.Context.Response.OnStarting(() => Task.CompletedTask);
-                },
                 DefaultContentType = "application/octet-stream",
                 ServeUnknownFileTypes = true,
                 HttpsCompression = HttpsCompressionMode.Compress,
                 ContentTypeProvider = contentTypeProvider,
-                FileProvider = physicalFileProvider
+                FileProvider = physicalFileProvider,
+                
             };
 
             Log.StaticFileOptionsConfigured(logger);
@@ -172,19 +173,10 @@ var host = Host.CreateDefaultBuilder(args)
             app.UseMiddleware<RequestHandlingMiddleware>();
             app.UseDefaultFiles(defaultFileOptions);
             app.UseStaticFiles(staticFileOptions); //move to MapStaticAssets in 10.0
-
+            
             Log.MiddlewareConfigured(logger);
             
             app.UseRouting();
-
-            app.UseEndpoints(endpoints =>
-            {
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-                endpoints.Map("/{*url}", async context =>
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-                {
-                });
-            });
         });
     })
     .Build();

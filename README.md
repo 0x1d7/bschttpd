@@ -11,8 +11,9 @@ Probably not, but I would love feedback!
 
 ## Requirements
 
-To run, install the .NET 8.0 ASP.NET Core Runtime on Windows, and the .NET 8.0.405 SDK on Linux and macOS. To build, 
-install the .NET 8.0.405 SDK and restore the Nuget packages.
+No dependencies are required to run the project. This project uses NativeAOT and builds the necessary .NET 
+assemblies into the binary. To build on Linux and Windows, install the .NET 8.0.405 SDK and restore the Nuget 
+packages; macOS will also need the XCode command line tools.
 
 [.NET 8.0 Downloads](https://dotnet.microsoft.com/download/dotnet/8.0)
 
@@ -29,6 +30,7 @@ This application has been tested on:
 * Http to Https Redirection
 * Certificate rollover without restart
 * W3C formatted logs
+* NativeAOT
 * In-memory caching for all served files
 * Directory browsing
 
@@ -92,7 +94,7 @@ that port numbers below port 1024 generally require elevated rights on operating
 
 The next step is to specify the `Wwwroot` value. This value is where the files you want to serve via the web are 
 located. It must be a fully qualified path. Examples of this might be `/srv/wwwroot` on Linux, 
-`/opt/local/opt/bschttpd/www` on macOS, or `C:\\basichttpd\\wwwroot` on Windows (note the double blackslashes). If 
+`/opt/local/opt/bschttpd/www` on macOS, or `C:\\basichttpd\\wwwroot` on Windows (note the double path separators). If 
 running BasicHttpd under a dedicated user account, the user must have read only rights to this directory.
 
 ### Other Settings
