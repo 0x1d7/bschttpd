@@ -43,10 +43,15 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddResponseCompression(options =>
         {
-            options.EnableForHttps = true;
+            options.EnableForHttps = false;
+            options.Providers.Add<BrotliCompressionProvider>();
             options.Providers.Add<GzipCompressionProvider>();
         });
-        
+
+        services.Configure<BrotliCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Optimal;
+        });
         services.Configure<GzipCompressionProviderOptions>(options =>
         {
             options.Level = CompressionLevel.Optimal;

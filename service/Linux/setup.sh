@@ -12,6 +12,7 @@ PRIVATE_CERT_DIR="/etc/ssl/private"
 PUBLIC_CERT_DIR="/etc/ssl/certs"
 WWWROOT_DIR="/srv/bschttpd/www"
 LOGS_DIR="/var/log/bschttpd/logs"
+BINARY_DIR="/opt/bschttpd"
 BINARY="/opt/bschttpd/bschttpd"
 
 # Create the user with a system UID
@@ -42,6 +43,10 @@ if id "$USER" &>/dev/null; then
     sudo chown -R $USER:$USER "$LOGS_DIR"
     sudo chmod -R 750 "$LOGS_DIR"
     sudo chmod -R u+rw "$LOGS_DIR"
+
+    cp ../bschttpd $BINARY_DIR
+    cp ../*.conf $BINARY_DIR
+    mv ../errorpages $BINARY_DIR
 
     # Grant execute permissions to the binary
     sudo chmod +x "$BINARY"

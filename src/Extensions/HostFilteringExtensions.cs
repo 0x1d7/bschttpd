@@ -1,10 +1,8 @@
+using bschttpd.Properties;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using bschttpd.Properties;
 
 namespace bschttpd.Extensions
 {

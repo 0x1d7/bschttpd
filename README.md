@@ -13,7 +13,7 @@ Probably not, but I would love feedback!
 
 No dependencies are required to run the project. This project uses NativeAOT and builds the necessary .NET 
 assemblies into the binary. To build on Linux and Windows, install the .NET 8.0.405 SDK and restore the Nuget 
-packages; macOS will also need the XCode command line tools.
+packages; macOS will also need the XCode command line tools in addition to the .NET 8.0.405 SDK.
 
 [.NET 8.0 Downloads](https://dotnet.microsoft.com/download/dotnet/8.0)
 
@@ -129,3 +129,10 @@ required. Execute `setup.zsh` with `sudo`.
 ### Windows
 
 Modify `setup.ps1` as desired. Execute `setup.ps1` in an elevated PowerShell window.
+
+## Building
+
+Each operating system has a build script in the root of the project directory. Because NativeAOT is in use, it is 
+only possible to build Linux builds on Linux, macOS builds on macOS, and Windows builds on Windows. It is possible 
+to cross-compile for another architecture on a specific platform (arm64 can compile for x64), however the build 
+scripts are written to only compile to the host computer's architecture and only for arm64 or x64.

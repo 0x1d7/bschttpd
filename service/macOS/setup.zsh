@@ -60,9 +60,9 @@ chown -R "$USER":admin "$LOGS_DIR"
 chmod -R 750 "$LOGS_DIR"
 chmod -R u+rw "$LOGS_DIR"
 
-cp ../../bschttpd $BINARY_DIR
-cp ../../*.conf $BINARY_DIR
-mv ../../errorpages $BINARY_DIR
+cp ../bschttpd $BINARY_DIR
+cp ../*.conf $BINARY_DIR
+mv ../errorpages $BINARY_DIR
 
 # Check if the binary file exists before attempting to set permissions
 if [ -f "$BINARY" ]; then

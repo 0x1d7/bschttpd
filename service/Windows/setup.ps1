@@ -53,15 +53,21 @@ if (-not (Get-LocalUser -Name $serviceUser -ErrorAction SilentlyContinue)) {
 }
 
 # Create necessary directories
+$binaryDir = "$env:ProgramFiles\bschttpd"
 $logsDir = "$env:ProgramData\bschttpd\logs"
 $sslCertsDir = "$env:ProgramData\bschttpd\ssl\certs"
 $sslPrivateDir = "$env:ProgramData\bschttpd\ssl\private"
 $wwwDir = "$env:ProgramData\bschttpd\www"
 
+New-Item -ItemType Directory -Path $binaryDir -Force
 New-Item -ItemType Directory -Path $logsDir -Force
 New-Item -ItemType Directory -Path $sslCertsDir -Force
 New-Item -ItemType Directory -Path $sslPrivateDir -Force
 New-Item -ItemType Directory -Path $wwwDir -Force
+
+cp ..\bschttpd $binaryDir
+cp ..\*.conf $binaryDir
+mv ..\errorpages $binaryDir
 
 # Set permissions
 $acl = Get-Acl $logsDir
