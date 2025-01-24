@@ -1,5 +1,6 @@
 using bschttpd.Properties;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace bschttpd;
@@ -8,51 +9,90 @@ public class RequestHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly IOptions<WebServerConfiguration> _webServerConfiguration;
-    public RequestHandlingMiddleware(RequestDelegate next, IOptions<WebServerConfiguration> webServerConfiguration)
+    private readonly IMemoryCache _memoryCache;
+    public RequestHandlingMiddleware(RequestDelegate next, IOptions<WebServerConfiguration> webServerConfiguration, 
+        IMemoryCache memoryCache)
     {
         _next = next;
         _webServerConfiguration = webServerConfiguration;
+        _memoryCache = memoryCache;
     }
     
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value?.TrimStart('/').TrimEnd();
-       
-        if (path is null)
-        {
-            //Unknown error, shouldn't happen
-            if (context.Response.HasStarted) return;
-            await HandleErrorResponse(context, 400);
-            return;
-        }
-
-        if (context.Request.Method != HttpMethods.Get && context.Request.Method != HttpMethods.Head)
-        {
-            if (context.Response.HasStarted) return;
-            await HandleErrorResponse(context, 501);
-            return;
-        }
-
-        if (IsExcluded(path, _webServerConfiguration.Value.NoServe))
-        {
-            if (context.Response.HasStarted) return;
-            await HandleErrorResponse(context, 404);
-            return;
-        }
+        var filePath = path;
         
-        if (Path.GetFileName(path).StartsWith('.'))
+        if (filePath == "" || filePath == "/")
         {
-            if (context.Response.HasStarted) return;
-            await HandleErrorResponse(context, 404);
-            return;
+            filePath = _webServerConfiguration.Value.DefaultDocument;
         }
 
-        await _next(context);
-        
-        if (context.Response.StatusCode == StatusCodes.Status404NotFound)
+        if (filePath != null)
         {
-            if (context.Response.HasStarted) return;
-            await HandleErrorResponse(context, 404);
+            filePath = Path.GetFullPath(Path.Combine(_webServerConfiguration.Value.Wwwroot, filePath));
+
+            if (path is null)
+            {
+                //Unknown error, shouldn't happen
+                if (context.Response.HasStarted) return;
+                await HandleErrorResponse(context, 400);
+                return;
+            }
+
+            if (context.Request.Method != HttpMethods.Get && context.Request.Method != HttpMethods.Head)
+            {
+                if (context.Response.HasStarted) return;
+                await HandleErrorResponse(context, 501);
+                return;
+            }
+
+            if (IsExcluded(path, _webServerConfiguration.Value.NoServe))
+            {
+                if (context.Response.HasStarted) return;
+                await HandleErrorResponse(context, 404);
+                return;
+            }
+
+            if (Path.GetFileName(path).StartsWith('.'))
+            {
+                if (context.Response.HasStarted) return;
+                await HandleErrorResponse(context, 404);
+                return;
+            }
+
+            if (_memoryCache.TryGetValue(filePath, out byte[]? cacheEntry))
+            {
+                context.Response.ContentType = ContentType.GetContentType(filePath);
+                await context.Response.Body.WriteAsync(cacheEntry);
+                return;
+            }
+
+            await _next(context);
+
+            switch (context.Response.StatusCode)
+            {
+                case StatusCodes.Status404NotFound when context.Response.HasStarted:
+                    return;
+                case StatusCodes.Status404NotFound:
+                    await HandleErrorResponse(context, 404);
+                    break;
+                case StatusCodes.Status200OK:
+                {
+                    var fileInfo = new FileInfo(filePath);
+
+                    if (fileInfo.Length < 1 * 1024 * 1024)
+                    {
+                        var fileContent = await File.ReadAllBytesAsync(filePath);
+
+                        _memoryCache.Set(filePath, fileContent, new MemoryCacheEntryOptions
+                        {
+                            Priority = CacheItemPriority.High
+                        });
+                    }
+                    break;
+                }
+            }
         }
     }
 

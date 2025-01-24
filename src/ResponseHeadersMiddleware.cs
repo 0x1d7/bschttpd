@@ -17,7 +17,7 @@ public class ResponseHeadersMiddleware(RequestDelegate next, IOptions<WebServerC
                 new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
             {
                 Public = true,
-                MaxAge = TimeSpan.FromMinutes(webServerConfiguration.Value.CacheControlMaxAge)
+                MaxAge = TimeSpan.FromSeconds(webServerConfiguration.Value.CacheControlMaxAge)
             };
             return Task.CompletedTask;
         });

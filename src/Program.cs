@@ -110,6 +110,7 @@ var host = Host.CreateDefaultBuilder(args)
             var webServerConfiguration = configuration.GetRequiredSection(nameof(WebServerConfiguration));
             var webServerConfigurationOptions = webServerConfiguration.Get<WebServerConfiguration>();
             var wwwroot = webServerConfigurationOptions.Wwwroot;
+            
             Log.WebServerConfigured(logger, wwwroot);
             
             webBuilder.UseKestrel((context, options) =>
