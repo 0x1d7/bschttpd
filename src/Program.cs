@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Log = bschttpd.Log;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -57,15 +58,18 @@ var host = Host.CreateDefaultBuilder(args)
             options.Level = CompressionLevel.Optimal;
         });
 
-        services.AddW3CLogging(logging =>
+      /*  services.AddW3CLogging(logging =>
         {
-            logging.LoggingFields = W3CLoggingFields.All;
+            logging.LoggingFields = W3CLoggingFields.Date | W3CLoggingFields.Time |
+                                    W3CLoggingFields.Request | W3CLoggingFields.ClientIpAddress |
+                                    W3CLoggingFields.TimeTaken;
             logging.FlushInterval = TimeSpan.FromSeconds(webServerConfigurationOptions.W3CLogFlushInterval);
             logging.FileSizeLimit = webServerConfigurationOptions.W3CLogFileSizeLimit;
             logging.FileName = webServerConfigurationOptions.W3CLogName;
             logging.LogDirectory = webServerConfigurationOptions.W3CLogDirectory;
-        });
-
+        });*/
+      
+        
         services.AddCustomHostFiltering(hostingContext);
         
         services.AddMemoryCache();
@@ -164,7 +168,8 @@ var host = Host.CreateDefaultBuilder(args)
             app.UseMiddleware<ResponseHeadersMiddleware>();
             app.UseResponseCaching();
             app.UseResponseCompression();
-            app.UseW3CLogging();
+           // app.UseW3CLogging();
+            app.UseMiddleware<RotatingW3CLoggingMiddleware>(webServerConfigurationOptions.W3CLogDirectory);
             app.UseMiddleware<RequestHandlingMiddleware>();
             app.UseDefaultFiles(defaultFileOptions);
             app.UseStaticFiles(staticFileOptions); //move to MapStaticAssets in 10.0

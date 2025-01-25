@@ -20,8 +20,8 @@ public class RequestHandlingMiddleware
     
     public async Task InvokeAsync(HttpContext context)
     {
-        var path = context.Request.Path.Value?.TrimStart('/').TrimEnd();
-        var filePath = string.IsNullOrWhiteSpace(path) ? _webServerConfiguration.Value.DefaultDocument : path;
+        var filePath = context.Request.Path.Value?.TrimStart('/').TrimEnd();
+        filePath = string.IsNullOrWhiteSpace(filePath) ? _webServerConfiguration.Value.DefaultDocument : filePath;
         
         filePath = Path.GetFullPath(Path.Combine(_webServerConfiguration.Value.Wwwroot, filePath));
         
@@ -32,14 +32,14 @@ public class RequestHandlingMiddleware
             return;
         }
 
-        if (IsExcluded(path, _webServerConfiguration.Value.NoServe))
+        if (IsExcluded(filePath, _webServerConfiguration.Value.NoServe))
         {
             if (context.Response.HasStarted) return;
             await HandleErrorResponse(context, 404);
             return;
         }
 
-        if (Path.GetFileName(path).StartsWith('.'))
+        if (Path.GetFileName(filePath).StartsWith('.'))
         {
             if (context.Response.HasStarted) return;
             await HandleErrorResponse(context, 404);
