@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Threading.ThreadPool.MinThreads" Value="4"/>
+    <RuntimeHostConfigurationOption Include="System.Threading.ThreadPool.MinThreads" Value="16"/>
     <RuntimeHostConfigurationOption Include="System.Net.Http.SocketsHttpHandler.Http2Support" Value="true"/>
     <RuntimeHostConfigurationOption Include="System.GC.Server" Value="true"/>
   </ItemGroup>
@@ -25,7 +25,6 @@
   </ItemGroup>
   
   <Target Name="PostPublish" AfterTargets="Publish">
-    <!--<Exec Command="/usr/bin/strip -v $(PublishDir)$(TargetName)" Condition="'$(RuntimeIdentifier)' == 'osx-arm64' OR '$(RuntimeIdentifier)' == 'osx-x64'" />-->
     <Copy SourceFiles="@(ErrorPages)" DestinationFolder="$(PublishDir)errorpages" Condition="Exists('$(PublishDir)')" />
     <Copy SourceFiles="@(LinuxScripts)" DestinationFolder="$(PublishDir)service" Condition="Exists('$(PublishDir)') AND ('$(RuntimeIdentifier)' == 'linux-arm64' OR '$(RuntimeIdentifier)' == 'linux-x64')" />
     <Copy SourceFiles="@(macOSScripts)" DestinationFolder="$(PublishDir)service" Condition="Exists('$(PublishDir)') AND ('$(RuntimeIdentifier)' == 'osx-arm64' OR '$(RuntimeIdentifier)' == 'osx-x64')" />
@@ -55,6 +54,9 @@
     <None Update="appsettings.Production.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="pages\index.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <PropertyGroup>
@@ -65,7 +67,7 @@
     <SelfContained>true</SelfContained>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <PublishAot>true</PublishAot>
-    <StripSymbols>false</StripSymbols>
+    <StripSymbols>true</StripSymbols>
     <OptimizationPreference>Speed</OptimizationPreference>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <NoSymbolStrip>false</NoSymbolStrip>

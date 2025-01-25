@@ -8,8 +8,8 @@ fi
 
 # Define the user and the directories/files
 USER="bschttpd"
-PRIVATE_CERT_DIR="/etc/ssl/private"
-PUBLIC_CERT_DIR="/etc/ssl/certs"
+PRIVATE_CERT_DIR="/etc/bschttpd/ssl/private"
+PUBLIC_CERT_DIR="/etc/bschttpd/ssl/certs"
 WWWROOT_DIR="/srv/bschttpd/www"
 LOGS_DIR="/var/log/bschttpd/logs"
 BINARY_DIR="/opt/bschttpd"
@@ -25,7 +25,9 @@ if id "$USER" &>/dev/null; then
     # Create the directories if they don't exist
     sudo mkdir -p "$PRIVATE_CERT_DIR"
     sudo mkdir -p "$PUBLIC_CERT_DIR"
+    sudo mkdir -p "$WWWROOT_DIR"
     sudo mkdir -p "$LOGS_DIR"
+    sudo mkdir -p "$BINARY_DIR"
 
     # Grant read access to the private cert location and revoke access for all others
     sudo chown -R $USER:$USER "$PRIVATE_CERT_DIR"
@@ -45,8 +47,9 @@ if id "$USER" &>/dev/null; then
     sudo chmod -R u+rw "$LOGS_DIR"
 
     cp ../bschttpd $BINARY_DIR
-    cp ../*.conf $BINARY_DIR
+    cp ../*.json $BINARY_DIR
     mv ../errorpages $BINARY_DIR
+    cp --update=none ../pages/index.html $WWWROOT_DIR
 
     # Grant execute permissions to the binary
     sudo chmod +x "$BINARY"
@@ -57,12 +60,13 @@ else
     exit 1
 fi
 
-sudo ./bschttpd.service /etc/systemd/system
+sudo ../bschttpd.service /etc/systemd/system
 
 sudo systemctl daemon-reload
-sudo systemctl enable bschttpd.service
-sudo systemctl start bschttpd.service
+Echo "Configure appsettings.Production.conf"
+echo "Once complete, run"
+echo "    sudo systemctl enable bschttpd.service"
+echo "    sudo systemctl start bschttpd.service"
+echo "Verify the server is running with"
+echo "    systemctl status bschttpd"
 
-sleep 10
-
-systemctl status bschttpd.service

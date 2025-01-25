@@ -72,26 +72,15 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddResponseCaching();
         services.AddDirectoryBrowser();
     })
-    .ConfigureLogging(logging =>
+    .ConfigureLogging((hostingContext, logging) =>
     {
-        logging.ClearProviders();
+        var webServerConfiguration = hostingContext.Configuration.GetSection(nameof(WebServerConfiguration));
+        var webServerConfigurationOptions = webServerConfiguration.Get<WebServerConfiguration>();
         
-        var logsDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
-
-        if (!Directory.Exists(logsDirectory))
-        {
-            try
-            {
-                Directory.CreateDirectory(logsDirectory);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                Console.WriteLine($"Unable to create logs directory: {logsDirectory}.");
-            }
-        }
+        logging.ClearProviders();
    
-        var errorFilePath = Path.Combine(logsDirectory, "errors.log");
-        var statusFilePath = Path.Combine(logsDirectory, "status.log");
+        var errorFilePath = Path.Combine(webServerConfigurationOptions.W3CLogDirectory, "errors.log");
+        var statusFilePath = Path.Combine(webServerConfigurationOptions.W3CLogDirectory, "status.log");
         
         logging.AddProvider(new FileLoggingProviderProvider(errorFilePath, statusFilePath));
     })

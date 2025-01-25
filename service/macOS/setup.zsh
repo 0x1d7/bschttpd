@@ -8,9 +8,9 @@ fi
 
 # Define the user and the directories/files
 USER="bschttpd"
-PRIVATE_CERT_DIR="/opt/local/etc/ssl/private"
-PUBLIC_CERT_DIR="/opt/local/etc/ssl/certs"
-WWWROOT_DIR="/opt/local/opt/bschttpd/www"
+PRIVATE_CERT_DIR="/opt/local/etc/bschttpd/ssl/private"
+PUBLIC_CERT_DIR="/opt/local/etc/bschttpd/ssl/certs"
+WWWROOT_DIR="/opt/local/srv/bschttpd/www"
 LOGS_DIR="/opt/local/var/log/bschttpd"
 BINARY_DIR="/opt/bschttpd"
 BINARY="/opt/bschttpd/bschttpd"
@@ -61,7 +61,7 @@ chmod -R 750 "$LOGS_DIR"
 chmod -R u+rw "$LOGS_DIR"
 
 cp ../bschttpd $BINARY_DIR
-cp ../*.conf $BINARY_DIR
+cp ../*.json $BINARY_DIR
 mv ../errorpages $BINARY_DIR
 
 # Check if the binary file exists before attempting to set permissions
@@ -72,6 +72,8 @@ else
   echo "Binary file $BINARY does not exist. Please check the path."
   exit 1
 fi
+
+cp -n ../pages/index.html $WWWROOT_DIR
 
 # Copy plist to LaunchDaemons
 cp ./org.bschttpd.service.plist /Library/LaunchDaemons/org.bschttpd.service.plist

@@ -12,8 +12,24 @@ Probably not, but I would love feedback!
 ## Requirements
 
 No dependencies are required to run the project. This project uses NativeAOT and builds the necessary .NET 
-assemblies into the binary. To build on Linux and Windows, install the .NET 8.0.405 SDK and restore the Nuget 
-packages; macOS will also need the XCode command line tools in addition to the .NET 8.0.405 SDK.
+assemblies into the binary. To build on Linux you will need:
+
+* x64 or arm64 (aarch64) processor
+* .NET 8.0.402 SDK
+* clang or gcc in your $PATH
+* libz-dev
+* strip
+
+On macOS, you will need:
+
+* M-series or Intel Mac
+* .NET 8.0.402 SDK
+* XCode and XCode command line tools
+
+On Windows:
+
+* x64 or arm64 processor
+* .NET 8.0.402 SDK
 
 [.NET 8.0 Downloads](https://dotnet.microsoft.com/download/dotnet/8.0)
 

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Basic Httpd</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #5d5c61;
+        }
+        p {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        h2 {
+            color: #5d5c61;
+        }
+        ul {
+            text-align: left;
+            display: inline-block;
+        }
+        footer {
+            margin-top: 40px;
+            font-size: 0.8em;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+<h1>Welcome to Basic Httpd</h1>
+<p>If you see this page, your Basic Httpd web server is successfully installed and working.</p>
+<p>Thank you for using Basic Httpd. We hope you enjoy your web serving experience!</p>
+
+<h2>Features</h2>
+<ul>
+    <li><strong>Static File Handling</strong>: Efficiently serves static files with tools to customize configurations.</li>
+    <li><strong>In-Memory Caching</strong>: Supports caching mechanisms to enhance performance and reduce server load.</li>
+    <li><strong>Asynchronous I/O</strong>: Fully utilizes asynchronous I/O operations for optimal performance.</li>
+    <li><strong>Native AOT</strong>: Compiled to native code for high performance and minimal footprint.</li>
+</ul>
+
+<h2>Configuration</h2>
+<p>Basic Httpd can be easily configured through the <code>appsettings.conf</code> file:</p>
+<pre>
+        {
+          "WebServerConfiguration": {
+            "HttpsRedirection": false,
+            "Wwwroot": "/srv/wwwroot",
+            "DefaultDocument": "index.html"
+          },
+          "Kestrel": {
+            "Endpoints": {
+              "Http": {
+                "Url": "http://*:8080",
+                "Protocols": "Http1"
+              },
+              "Https": {
+                "Url": "https://localhost:8443",
+                "Protocols": "Http2",
+                "Certificate": {
+                  "Path": "/etc/ssl/certs/localhost.pem",
+                  "KeyPath": "/etc/ssl/private/localhost.key"
+                }
+              }
+            }
+          }
+        }
+    </pre>
+<p>You can change the default page by adjusting the <code>DefaultDocument</code> property in the configuration file.</p>
+<p>Endpoints can also be configured to specify HTTP and HTTPS protocols, ports, and certificates.</p>
+
+<h2>Open Source</h2>
+<p>Basic Httpd is open source software released under the BSD 2-Clause license.</p>
+<p>Visit our GitHub repository at <a href="https://github.com/0x1d7/bschttpd">https://github.com/0x1d7/bschttpd</a> to contribute or report issues.</p>
+
+<footer>
+    <p>&copy; 2025 Basic Httpd. All rights reserved.</p>
+</footer>
+</body>
+</html>
