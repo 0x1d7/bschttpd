@@ -1,53 +1,50 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace bschttpd
 {
-    public class FileLoggingProvider(string filePath, string categoryName) : ILogger
+    public class FileLoggingProvider : ILogger
     {
+        private readonly string _filePath;
+        private readonly string _categoryName;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
+
+        public FileLoggingProvider(string filePath, string categoryName)
+        {
+            _filePath = filePath;
+            _categoryName = categoryName;
+        }
 
         private async Task LogToFileAsync(string message)
         {
-            // ReSharper disable once ConvertToUsingDeclaration
-            await using (var writer = new StreamWriter(filePath, true))
+            await _semaphore.WaitAsync();
+            try
             {
-                await writer.WriteLineAsync($"{DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss.fff zzz} [{categoryName}] {message}");
-                await writer.FlushAsync(); // Ensure all data is written to the file
+                await using (var writer = new StreamWriter(_filePath, true))
+                {
+                    await writer.WriteLineAsync($"{DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss.fff zzz} [{_categoryName}] {message}");
+                    await writer.FlushAsync();
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, 
+            Func<TState, Exception?, string> formatter)
         {
-            if (!IsEnabled(logLevel)) return;
+            if (!IsEnabled(logLevel))
+                return;
 
             var message = formatter(state, exception);
 
-            Task.Run(async () =>
-            {
-                await _semaphore.WaitAsync(); // Async-friendly lock
-                try
-                {
-                    await LogToFileAsync($"{logLevel}: {message}");
+            _ = LogToFileAsync($"{logLevel}: {message}");
 
-                    if (exception != null)
-                    {
-                        await LogToFileAsync($"Exception: {exception}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Handle or log the exception as needed
-                    Console.WriteLine($"Logging failed: {ex}");
-                }
-                finally
-                {
-                    _semaphore.Release();
-                }
-            });
+            if (exception != null)
+            {
+                _ = LogToFileAsync($"Exception: {exception}");
+            }
         }
 
         public bool IsEnabled(LogLevel logLevel)
@@ -55,17 +52,23 @@ namespace bschttpd
             return logLevel >= LogLevel.Information;
         }
 
-        IDisposable ILogger.BeginScope<TState>(TState state)
-        {
-            return null!;
-        }
+        public IDisposable BeginScope<TState>(TState state) => null!;
     }
 
-    public class FileLoggingProviderProvider(string errorFilePath, string statusFilePath) : ILoggerProvider
+    public class FileLoggingProviderProvider : ILoggerProvider
     {
+        private readonly string _errorFilePath;
+        private readonly string _statusFilePath;
+
+        public FileLoggingProviderProvider(string errorFilePath, string statusFilePath)
+        {
+            _errorFilePath = errorFilePath;
+            _statusFilePath = statusFilePath;
+        }
+
         public ILogger CreateLogger(string categoryName)
         {
-            return new FileLoggingProvider(categoryName.Contains("Error") ? errorFilePath : statusFilePath, categoryName);
+            return new FileLoggingProvider(categoryName.Contains("Error") ? _errorFilePath : _statusFilePath, categoryName);
         }
 
         public void Dispose()

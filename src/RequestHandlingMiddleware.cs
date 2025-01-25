@@ -21,77 +21,69 @@ public class RequestHandlingMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value?.TrimStart('/').TrimEnd();
-        var filePath = path;
+        var filePath = path ?? _webServerConfiguration.Value.DefaultDocument;
         
-        if (filePath == "" || filePath == "/")
+        filePath = Path.GetFullPath(Path.Combine(_webServerConfiguration.Value.Wwwroot, filePath));
+        
+        if (path is null)
         {
-            filePath = _webServerConfiguration.Value.DefaultDocument;
+            //Unknown error, shouldn't happen
+            if (context.Response.HasStarted) return;
+            await HandleErrorResponse(context, 400);
+            return;
         }
 
-        if (filePath != null)
+        if (context.Request.Method != HttpMethods.Get && context.Request.Method != HttpMethods.Head)
         {
-            filePath = Path.GetFullPath(Path.Combine(_webServerConfiguration.Value.Wwwroot, filePath));
+            if (context.Response.HasStarted) return;
+            await HandleErrorResponse(context, 501);
+            return;
+        }
 
-            if (path is null)
-            {
-                //Unknown error, shouldn't happen
-                if (context.Response.HasStarted) return;
-                await HandleErrorResponse(context, 400);
+        if (IsExcluded(path, _webServerConfiguration.Value.NoServe))
+        {
+            if (context.Response.HasStarted) return;
+            await HandleErrorResponse(context, 404);
+            return;
+        }
+
+        if (Path.GetFileName(path).StartsWith('.'))
+        {
+            if (context.Response.HasStarted) return;
+            await HandleErrorResponse(context, 404);
+            return;
+        }
+
+        if (_memoryCache.TryGetValue(filePath, out byte[]? cacheEntry))
+        {
+            context.Response.ContentType = ContentType.GetContentType(filePath);
+            await context.Response.Body.WriteAsync(cacheEntry);
+            return;
+        }
+
+        await _next(context);
+
+        switch (context.Response.StatusCode)
+        {
+            case StatusCodes.Status404NotFound when context.Response.HasStarted:
                 return;
-            }
-
-            if (context.Request.Method != HttpMethods.Get && context.Request.Method != HttpMethods.Head)
-            {
-                if (context.Response.HasStarted) return;
-                await HandleErrorResponse(context, 501);
-                return;
-            }
-
-            if (IsExcluded(path, _webServerConfiguration.Value.NoServe))
-            {
-                if (context.Response.HasStarted) return;
+            case StatusCodes.Status404NotFound:
                 await HandleErrorResponse(context, 404);
-                return;
-            }
-
-            if (Path.GetFileName(path).StartsWith('.'))
+                break;
+            case StatusCodes.Status200OK:
             {
-                if (context.Response.HasStarted) return;
-                await HandleErrorResponse(context, 404);
-                return;
-            }
+                var fileInfo = new FileInfo(filePath);
 
-            if (_memoryCache.TryGetValue(filePath, out byte[]? cacheEntry))
-            {
-                context.Response.ContentType = ContentType.GetContentType(filePath);
-                await context.Response.Body.WriteAsync(cacheEntry);
-                return;
-            }
-
-            await _next(context);
-
-            switch (context.Response.StatusCode)
-            {
-                case StatusCodes.Status404NotFound when context.Response.HasStarted:
-                    return;
-                case StatusCodes.Status404NotFound:
-                    await HandleErrorResponse(context, 404);
-                    break;
-                case StatusCodes.Status200OK:
+                if (fileInfo.Length < 1 * 1024 * 1024)
                 {
-                    var fileInfo = new FileInfo(filePath);
+                    var fileContent = await File.ReadAllBytesAsync(filePath);
 
-                    if (fileInfo.Length < 1 * 1024 * 1024)
+                    _memoryCache.Set(filePath, fileContent, new MemoryCacheEntryOptions
                     {
-                        var fileContent = await File.ReadAllBytesAsync(filePath);
-
-                        _memoryCache.Set(filePath, fileContent, new MemoryCacheEntryOptions
-                        {
-                            Priority = CacheItemPriority.High
-                        });
-                    }
-                    break;
+                        Priority = CacheItemPriority.High
+                    });
                 }
+                break;
             }
         }
     }
@@ -100,16 +92,20 @@ public class RequestHandlingMiddleware
     {
         var errorPath = Path.Combine($"{Environment.CurrentDirectory}/{_webServerConfiguration.Value.ErrorPagesPath}", 
             $"{statusCode}.html");
+        
         if (File.Exists(errorPath))
         {
-            context.Response.Clear();
+           /* context.Response.Clear();
             context.Response.StatusCode = statusCode;
             context.Response.ContentType = "text/html";
-            await context.Response.WriteAsync(await File.ReadAllTextAsync(errorPath));
+            await context.Response.WriteAsync(await File.ReadAllTextAsync(errorPath));*/
+           
+           var errorContent = await File.ReadAllTextAsync(errorPath);
+           await context.Response.WriteAsync(errorContent);
         }
         else
         {
-            context.Response.StatusCode = statusCode;
+            //context.Response.StatusCode = statusCode;
             await context.Response.WriteAsync($"An error occurred: {statusCode}");
         }
 
