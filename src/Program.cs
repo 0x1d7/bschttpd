@@ -4,8 +4,8 @@ using bschttpd.Extensions;
 using bschttpd.Properties;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Log = bschttpd.Log;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -58,17 +59,9 @@ var host = Host.CreateDefaultBuilder(args)
             options.Level = CompressionLevel.Optimal;
         });
 
-      /*  services.AddW3CLogging(logging =>
-        {
-            logging.LoggingFields = W3CLoggingFields.Date | W3CLoggingFields.Time |
-                                    W3CLoggingFields.Request | W3CLoggingFields.ClientIpAddress |
-                                    W3CLoggingFields.TimeTaken;
-            logging.FlushInterval = TimeSpan.FromSeconds(webServerConfigurationOptions.W3CLogFlushInterval);
-            logging.FileSizeLimit = webServerConfigurationOptions.W3CLogFileSizeLimit;
-            logging.FileName = webServerConfigurationOptions.W3CLogName;
-            logging.LogDirectory = webServerConfigurationOptions.W3CLogDirectory;
-        });*/
-      
+
+// Register the middleware without pre-creating it as a service
+
         
         services.AddCustomHostFiltering(hostingContext);
         
@@ -168,8 +161,8 @@ var host = Host.CreateDefaultBuilder(args)
             app.UseMiddleware<ResponseHeadersMiddleware>();
             app.UseResponseCaching();
             app.UseResponseCompression();
-           // app.UseW3CLogging();
-            app.UseMiddleware<RotatingW3CLoggingMiddleware>(webServerConfigurationOptions.W3CLogDirectory);
+            app.UseMiddleware<RotatingW3CLoggingMiddleware>();
+
             app.UseMiddleware<RequestHandlingMiddleware>();
             app.UseDefaultFiles(defaultFileOptions);
             app.UseStaticFiles(staticFileOptions); //move to MapStaticAssets in 10.0
@@ -180,5 +173,6 @@ var host = Host.CreateDefaultBuilder(args)
         });
     })
     .Build();
+
 
 await host.RunAsync();

@@ -1,5 +1,7 @@
 using System.Text;
+using bschttpd.Properties;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 public class RotatingW3CLoggingMiddleware : IDisposable
 {
@@ -11,11 +13,11 @@ public class RotatingW3CLoggingMiddleware : IDisposable
     private const int MaxLogFileSize = 20 * 1024 * 1024; // 20 MB
     private string _currentLogFilePath;
 
-    public RotatingW3CLoggingMiddleware(RequestDelegate next, string logDirectory, TimeSpan flushInterval)
+    public RotatingW3CLoggingMiddleware(RequestDelegate next, IOptions<WebServerConfiguration> webServerConfiguration)
     {
         _next = next ?? throw new ArgumentNullException(nameof(next));
-        _logDirectory = logDirectory ?? throw new ArgumentNullException(nameof(logDirectory));
-        _flushInterval = flushInterval;
+        _logDirectory = webServerConfiguration.Value.W3CLogDirectory;
+        _flushInterval = new TimeSpan(0, 5, 0);
         _flushTimer = new Timer(async _ => await FlushLogsAsync(), null, _flushInterval, _flushInterval);
         _currentLogFilePath = GetLogFilePath();
     }
@@ -46,7 +48,6 @@ public class RotatingW3CLoggingMiddleware : IDisposable
         var dateSuffix = DateTime.UtcNow.ToString("yyyy-MM-dd");
         var logFilePath = Path.Combine(_logDirectory, $"w3c-log-{dateSuffix}.txt");
 
-        // Rotate log file if it exceeds the size limit
         if (File.Exists(logFilePath) && new FileInfo(logFilePath).Length >= MaxLogFileSize)
         {
             var timestamp = DateTime.UtcNow.ToString("HH-mm-ss");
