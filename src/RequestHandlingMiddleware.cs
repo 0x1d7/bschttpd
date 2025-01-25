@@ -21,18 +21,10 @@ public class RequestHandlingMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value?.TrimStart('/').TrimEnd();
-        var filePath = path ?? _webServerConfiguration.Value.DefaultDocument;
+        var filePath = string.IsNullOrWhiteSpace(path) ? _webServerConfiguration.Value.DefaultDocument : path;
         
         filePath = Path.GetFullPath(Path.Combine(_webServerConfiguration.Value.Wwwroot, filePath));
         
-        if (path is null)
-        {
-            //Unknown error, shouldn't happen
-            if (context.Response.HasStarted) return;
-            await HandleErrorResponse(context, 400);
-            return;
-        }
-
         if (context.Request.Method != HttpMethods.Get && context.Request.Method != HttpMethods.Head)
         {
             if (context.Response.HasStarted) return;

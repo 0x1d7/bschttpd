@@ -52,7 +52,10 @@ namespace bschttpd
             return logLevel >= LogLevel.Information;
         }
 
-        public IDisposable BeginScope<TState>(TState state) => null!;
+        IDisposable ILogger.BeginScope<TState>(TState state)
+        { 
+            return null!;
+        }
     }
 
     public class FileLoggingProviderProvider : ILoggerProvider
