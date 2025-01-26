@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Log = bschttpd.Log;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -58,13 +57,8 @@ var host = Host.CreateDefaultBuilder(args)
         {
             options.Level = CompressionLevel.Optimal;
         });
-
-
-// Register the middleware without pre-creating it as a service
-
         
         services.AddCustomHostFiltering(hostingContext);
-        
         services.AddMemoryCache();
         services.AddResponseCaching();
         services.AddDirectoryBrowser();
@@ -173,6 +167,5 @@ var host = Host.CreateDefaultBuilder(args)
         });
     })
     .Build();
-
 
 await host.RunAsync();

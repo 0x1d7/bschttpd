@@ -1,6 +1,7 @@
 using System.Text;
 using bschttpd.Properties;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 public class RotatingW3CLoggingMiddleware : IDisposable
@@ -13,13 +14,15 @@ public class RotatingW3CLoggingMiddleware : IDisposable
     private const int MaxLogFileSize = 20 * 1024 * 1024; // 20 MB
     private string _currentLogFilePath;
 
-    public RotatingW3CLoggingMiddleware(RequestDelegate next, IOptions<WebServerConfiguration> webServerConfiguration)
+    public RotatingW3CLoggingMiddleware(RequestDelegate next, IOptions<WebServerConfiguration> webServerConfiguration, IHostApplicationLifetime applicationLifetime)
     {
         _next = next ?? throw new ArgumentNullException(nameof(next));
         _logDirectory = webServerConfiguration.Value.W3CLogDirectory;
         _flushInterval = new TimeSpan(0, 5, 0);
         _flushTimer = new Timer(async _ => await FlushLogsAsync(), null, _flushInterval, _flushInterval);
         _currentLogFilePath = GetLogFilePath();
+        
+        applicationLifetime.ApplicationStopping.Register(OnShutdown);
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -78,6 +81,11 @@ public class RotatingW3CLoggingMiddleware : IDisposable
         }
     }
 
+    public void OnShutdown()
+    {
+        Dispose();
+    }
+    
     public void Dispose()
     {
         _flushTimer.Dispose();
