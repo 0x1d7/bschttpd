@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace bschttpd
 {
-    public static partial class Log
+    public static partial class ServerLog
     {
         [LoggerMessage(EventId = 1000, Level = LogLevel.Information, Message = "Web server configured: {wwwroot}")]
         public static partial void WebServerConfigured(ILogger logger, string wwwroot);
@@ -27,7 +27,10 @@ namespace bschttpd
         [LoggerMessage(EventId = 1007, Level = LogLevel.Information, Message = "Middleware configured.")]
         public static partial void MiddlewareConfigured(ILogger logger);
         
-        [LoggerMessage(EventId = 2, Level = LogLevel.Error, Message = "Exception occurred.")]
+        [LoggerMessage(EventId = 5000, Level = LogLevel.Error, Message = "Exception occurred.")]
         public static partial void ExceptionOccurred(ILogger logger, Exception exception);
+        
+        [LoggerMessage(EventId = 5001, Level = LogLevel.Error, Message = "Error flushing logs.")]
+        public static partial void ErrorFlushingLogs(ILogger logger, Exception exception);
     }
 }

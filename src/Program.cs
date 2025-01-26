@@ -4,7 +4,6 @@ using bschttpd.Extensions;
 using bschttpd.Properties;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
@@ -13,7 +12,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Log = bschttpd.Log;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -22,8 +20,7 @@ var host = Host.CreateDefaultBuilder(args)
     {
         var env = hostingContext.HostingEnvironment;
         var basePath = AppContext.BaseDirectory;
-        config.AddJsonFile(Path.Combine(basePath,$"appsettings.json"), false, false)
-            .AddJsonFile(Path.Combine(basePath,$"appsettings.{env.EnvironmentName}.json"), false, false);
+        config.AddJsonFile(Path.Combine(basePath,$"appsettings.{env.EnvironmentName}.json"), false, false);
 
         if (env.IsDevelopment())
         {
@@ -91,7 +88,7 @@ var host = Host.CreateDefaultBuilder(args)
             var webServerConfigurationOptions = webServerConfiguration.Get<WebServerConfiguration>();
             var wwwroot = webServerConfigurationOptions.Wwwroot;
             
-            Log.WebServerConfigured(logger, wwwroot);
+            ServerLog.WebServerConfigured(logger, wwwroot);
             
             webBuilder.UseKestrel((context, options) =>
             {
@@ -100,7 +97,7 @@ var host = Host.CreateDefaultBuilder(args)
                 options.Configure(config.GetSection("Kestrel"), true);
             });
             
-            Log.KestrelConfigured(logger);
+            ServerLog.KestrelConfigured(logger);
 
             var contentTypeProvider = new FileExtensionContentTypeProvider();
             var physicalFileProvider = new PhysicalFileProvider(wwwroot);
@@ -108,14 +105,14 @@ var host = Host.CreateDefaultBuilder(args)
                 webServerConfigurationOptions.Wwwroot,
                 webServerConfigurationOptions.DirectoryBrowserRelativeDefaultPath));
 
-            Log.PhysicalFileProviderConfigured(logger);
+            ServerLog.PhysicalFileProviderConfigured(logger);
             
             var defaultFileOptions = new DefaultFilesOptions();
             defaultFileOptions.DefaultFileNames.Clear();
             defaultFileOptions.DefaultFileNames.Add(webServerConfigurationOptions.DefaultDocument);
             defaultFileOptions.FileProvider = physicalFileProvider;
 
-            Log.DefaultFilesOptionsConfigured(logger, webServerConfigurationOptions.DefaultDocument);
+            ServerLog.DefaultFilesOptionsConfigured(logger, webServerConfigurationOptions.DefaultDocument);
             
             var staticFileOptions = new StaticFileOptions
             {
@@ -127,7 +124,7 @@ var host = Host.CreateDefaultBuilder(args)
                 
             };
 
-            Log.StaticFileOptionsConfigured(logger);
+            ServerLog.StaticFileOptionsConfigured(logger);
             
             app.UseDirectoryBrowser(new DirectoryBrowserOptions
             {
@@ -139,16 +136,16 @@ var host = Host.CreateDefaultBuilder(args)
             if (webServerConfigurationOptions.HttpsRedirection)
             {
                 app.UseHttpsRedirection();
-                Log.HttpsRedirectConfigured(logger, webServerConfigurationOptions.HttpsRedirection);
+                ServerLog.HttpsRedirectConfigured(logger, webServerConfigurationOptions.HttpsRedirection);
             }
             else
             {
-                Log.HttpsRedirectConfigured(logger, webServerConfigurationOptions.HttpsRedirection);
+                ServerLog.HttpsRedirectConfigured(logger, webServerConfigurationOptions.HttpsRedirection);
             }
             
             webBuilder.UseContentRoot(wwwroot);
             
-            Log.ContentRoot(logger, wwwroot);
+            ServerLog.ContentRoot(logger, wwwroot);
             
             /* Ordered to apply custom headers first, logging before response,
                 response error checking before serving */
@@ -161,7 +158,7 @@ var host = Host.CreateDefaultBuilder(args)
             app.UseDefaultFiles(defaultFileOptions);
             app.UseStaticFiles(staticFileOptions); //move to MapStaticAssets in 10.0
             
-            Log.MiddlewareConfigured(logger);
+            ServerLog.MiddlewareConfigured(logger);
             
             app.UseRouting();
         });

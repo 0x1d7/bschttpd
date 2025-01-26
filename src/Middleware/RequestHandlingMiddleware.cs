@@ -87,17 +87,17 @@ public class RequestHandlingMiddleware
         
         if (File.Exists(errorPath))
         {
-           /* context.Response.Clear();
-            context.Response.StatusCode = statusCode;
-            context.Response.ContentType = "text/html";
-            await context.Response.WriteAsync(await File.ReadAllTextAsync(errorPath));*/
+           context.Response.Clear();
+           context.Response.StatusCode = statusCode;
+           context.Response.ContentType = "text/html";
+           // await context.Response.WriteAsync(await File.ReadAllTextAsync(errorPath));*/
            
            var errorContent = await File.ReadAllTextAsync(errorPath);
            await context.Response.WriteAsync(errorContent);
         }
         else
         {
-            //context.Response.StatusCode = statusCode;
+            context.Response.StatusCode = statusCode;
             await context.Response.WriteAsync($"An error occurred: {statusCode}");
         }
 
