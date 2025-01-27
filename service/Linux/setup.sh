@@ -60,10 +60,13 @@ else
     exit 1
 fi
 
-sudo ../bschttpd.service /etc/systemd/system
+sudo cp ../bschttpd.service /etc/systemd/system
 
 sudo systemctl daemon-reload
-Echo "Configure appsettings.Production.conf"
+echo "Verify max number of file desciptors that a user"
+echo "can open. A low number may impact performance."
+echo ""
+echo "Configure appsettings.Production.conf"
 echo "Once complete, run"
 echo "    sudo systemctl enable bschttpd.service"
 echo "    sudo systemctl start bschttpd.service"

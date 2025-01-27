@@ -1,5 +1,5 @@
 [Unit]
-Description=BasicHttpd web server
+Description=Basic Httpd/1.0 web server
 After=network.target
 
 [Service]
