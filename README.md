@@ -38,6 +38,7 @@ This application has been tested on:
 * macOS 15.2 (arm64)
 * Windows 11 (x86-64)
 * Ubuntu 24.04 (arm64)
+* Debian 12 (arm64)
 
 ## Features
 
@@ -128,6 +129,8 @@ client.
 `DirectoryBrowserRelativeDefaultPath` a relative path under `wwwroot`.
 
 ## Installing As A Service
+
+_Setup scripts are still a work in progress, a manual setup is preferred_
 
 (IaaS!)
 
