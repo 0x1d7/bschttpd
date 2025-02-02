@@ -23,6 +23,7 @@ namespace bschttpd.Properties
         public string? Url { get; set; }
         public string? Protocols { get; set; }
         public Certificate? Certificate { get; set; }
+        public List<string>? AdditionalHttpsHosts { get; set; }
     }
 
     public class Certificate

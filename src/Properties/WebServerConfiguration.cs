@@ -8,6 +8,10 @@ public class WebServerConfiguration
 {
     [Required]
     public bool HttpsRedirection { get; set; } = false;
+
+    public bool HstsEnabled { get; set; } = false;
+
+    public int HstsMaxAge { get; set; } = 60;
     [Required]
     public string Wwwroot {get; set; }
     public string DefaultDocument { get; set; } = "index.html";
@@ -19,6 +23,6 @@ public class WebServerConfiguration
     public string W3CLogDirectory { get; set; } = "logs";
     public string ServerName => "Basic-Httpd/1.0";
     public bool DirectoryBrowsingEnabled { get; set; } = false;
-    public string DirectoryBrowserRelativeDefaultPath { get; set; } = "files";
+    public string DirectoryBrowserPath { get; set; } = "files";
     public List<string> NoServe { get; set; }
 }

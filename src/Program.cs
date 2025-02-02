@@ -1,11 +1,15 @@
 using System.IO.Compression;
+using System.Security.Cryptography.X509Certificates;
 using bschttpd;
 using bschttpd.Extensions;
 using bschttpd.Properties;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,6 +59,30 @@ var host = Host.CreateDefaultBuilder(args)
             options.Level = CompressionLevel.Optimal;
         });
         
+        services.AddRequestTimeouts(options => {
+            options.DefaultPolicy = new RequestTimeoutPolicy {
+                Timeout = TimeSpan.FromMilliseconds(5000),
+                TimeoutStatusCode = 408,
+                WriteTimeoutResponse = async (HttpContext context) => {
+                    context.Response.ContentType = "text/plain";
+                    await context.Response.WriteAsync("Response Output");
+                }
+            };
+        });
+
+        if (webServerConfigurationOptions.HstsEnabled)
+        {
+                    services.AddHsts(options =>
+                    {
+                        options.MaxAge = TimeSpan.FromDays(webServerConfigurationOptions.HstsMaxAge);
+                        options.IncludeSubDomains = true;
+                        options.Preload = true;
+                        //localhost will only work on HTTPS
+                        options.ExcludedHosts.Clear(); 
+                        options.ExcludedHosts.Add("localhost");
+                    });
+        }
+        
         services.AddCustomHostFiltering(hostingContext);
         services.AddMemoryCache();
         services.AddResponseCaching();
@@ -80,7 +108,6 @@ var host = Host.CreateDefaultBuilder(args)
 #if WINDOWS
             webBuilder.UseWindowsService();
 #endif
-            
             var services = app.ApplicationServices;
             var logger = services.GetRequiredService<ILogger<Program>>();
             var configuration = services.GetRequiredService<IConfiguration>();
@@ -92,18 +119,33 @@ var host = Host.CreateDefaultBuilder(args)
             
             webBuilder.UseKestrel((context, options) =>
             {
+                var kestrelConfig = new Kestrel();
+                context.Configuration.GetSection("Kestrel").Bind(kestrelConfig);
                 var config = context.Configuration;
                 //will reload endpoints on cert update
                 options.Configure(config.GetSection("Kestrel"), true);
+
+                if (kestrelConfig.Endpoints.Https.AdditionalHttpsHosts == null) return;
+                foreach (var url in kestrelConfig.Endpoints.Https.AdditionalHttpsHosts)
+                {
+                    options.ListenAnyIP(new Uri(url).Port, listenOptions =>
+                    {
+                        listenOptions.Protocols = Enum.Parse<HttpProtocols>(kestrelConfig.Endpoints.Https.Protocols!, 
+                            ignoreCase: true);
+                        listenOptions.UseHttps(httpsOptions =>
+                        {
+                            httpsOptions.ServerCertificate = X509Certificate2.CreateFromPemFile(
+                                kestrelConfig.Endpoints.Https.Certificate.Path!,
+                                kestrelConfig.Endpoints.Https.Certificate.KeyPath);
+                        });
+                    });
+                }
             });
             
             ServerLog.KestrelConfigured(logger);
 
             var contentTypeProvider = new FileExtensionContentTypeProvider();
             var physicalFileProvider = new PhysicalFileProvider(wwwroot);
-            var directoryPhysicalFileProvider = new PhysicalFileProvider(Path.Combine(
-                webServerConfigurationOptions.Wwwroot,
-                webServerConfigurationOptions.DirectoryBrowserRelativeDefaultPath));
 
             ServerLog.PhysicalFileProviderConfigured(logger);
             
@@ -121,18 +163,21 @@ var host = Host.CreateDefaultBuilder(args)
                 HttpsCompression = HttpsCompressionMode.Compress,
                 ContentTypeProvider = contentTypeProvider,
                 FileProvider = physicalFileProvider,
-                
             };
 
             ServerLog.StaticFileOptionsConfigured(logger);
-            
-            app.UseDirectoryBrowser(new DirectoryBrowserOptions
-            {
-                FileProvider = directoryPhysicalFileProvider,
-                RequestPath = Path.Combine("/", 
-                    webServerConfigurationOptions.DirectoryBrowserRelativeDefaultPath)
-            });
 
+            if (webServerConfigurationOptions.DirectoryBrowsingEnabled)
+            {
+                var directoryPhysicalFileProvider = 
+                    new PhysicalFileProvider(webServerConfigurationOptions.DirectoryBrowserPath);
+                
+                app.UseDirectoryBrowser(new DirectoryBrowserOptions
+                {
+                    FileProvider = directoryPhysicalFileProvider
+                });
+            }
+            
             if (webServerConfigurationOptions.HttpsRedirection)
             {
                 app.UseHttpsRedirection();
@@ -146,14 +191,23 @@ var host = Host.CreateDefaultBuilder(args)
             webBuilder.UseContentRoot(wwwroot);
             
             ServerLog.ContentRoot(logger, wwwroot);
+
+            if (webServerConfigurationOptions.HstsEnabled)
+            {
+                app.UseHsts();
+                app.UseHttpsRedirection(); //ignore admin setting
+                
+                ServerLog.HstsEnabled(logger);
+            }
             
             /* Ordered to apply custom headers first, logging before response,
                 response error checking before serving */
+
+            app.UseHostFiltering();
             app.UseMiddleware<ResponseHeadersMiddleware>();
             app.UseResponseCaching();
             app.UseResponseCompression();
             app.UseMiddleware<RotatingW3CLoggingMiddleware>();
-
             app.UseMiddleware<RequestHandlingMiddleware>();
             app.UseDefaultFiles(defaultFileOptions);
             app.UseStaticFiles(staticFileOptions); //move to MapStaticAssets in 10.0

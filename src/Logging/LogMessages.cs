@@ -26,6 +26,9 @@ namespace bschttpd
         
         [LoggerMessage(EventId = 1007, Level = LogLevel.Information, Message = "Middleware configured.")]
         public static partial void MiddlewareConfigured(ILogger logger);
+
+        [LoggerMessage(EventId = 1008, Level = LogLevel.Information, Message = "Hsts enabled.")]
+        public static partial void HstsEnabled(ILogger logger);
         
         [LoggerMessage(EventId = 5000, Level = LogLevel.Error, Message = "Exception occurred.")]
         public static partial void ExceptionOccurred(ILogger logger, Exception exception);

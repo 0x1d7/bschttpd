@@ -47,14 +47,25 @@ namespace bschttpd.Extensions
                 {
                     var url = httpsEndpoint.Url;
 
-                    if (url!.Contains('*'))
+                    if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
                     {
-                        if (!allowedHosts.Contains("*"))
+                        var host = uri.Host;
+                        if (!allowedHosts.Contains(host))
                         {
-                            allowedHosts.Add("*");
+                            allowedHosts.Add(host);
                         }
-                        
-                    } else if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                    }
+                }
+            }
+
+            if (kestrelConfigurationOptions?.Endpoints?.Https?.AdditionalHttpsHosts != null)
+            {
+                foreach (var additionalHttpsHost in 
+                         kestrelConfigurationOptions.Endpoints.Https.AdditionalHttpsHosts)
+                {
+                    var url = additionalHttpsHost;
+                    
+                    if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
                     {
                         var host = uri.Host;
                         if (!allowedHosts.Contains(host))
